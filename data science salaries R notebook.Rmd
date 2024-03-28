@@ -1,0 +1,279 @@
+---
+title: "Analyzing Data Science Salary R Notebook"
+author: "Rusiru Pabasara"
+date: "28/03/2024"
+output:
+  word_document:
+    toc: yes
+  html_document:
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+
+In this notebook, I will embark on a journey through a comprehensive data set of data science salaries, exploring various facets such as job titles, experience levels, and salary trends across different employment types. Our goal is to uncover valuable insights that can shed light on the current landscape of the data science job market.
+
+## OBJECTIVES
+
+1. Identify the association between avg salary(USD) and most common jobs
+2. Identify the impact of experience level to the salary
+3. Identify association between remote ratio and salary(USD)
+4. Identify association between salary and employee type
+5. Identify company location and employee residence have a association
+
+
+* First,Load the R libraries and load our data set from a CSV file named 'ds_salaries.csv' into a data frame called 'df'
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+df <- read.csv("ds_salaries.csv", header = TRUE, sep = ",")
+#load the CSV File
+```
+
+
+```{r}
+dim(df)
+head(df)
+```
+
+```{r}
+sum(is.na(df))  #checking the missing values
+str(df) 
+```
+
+## DATA PREPROSSESING
+
+* Then we have to categorized the job titles to specific main job titles and convert to factors.
+
+eg:- Applied Data Analyst ---> Data Analyst
+
+```{r}
+#Categorized job titles to Main job title 
+categorize_title <-function(job_title){
+  if (grepl('Data Scientist',job_title,ignore.case = TRUE)){
+    return('Data Scientist')
+  }else if(grepl('Data Analyst',job_title,ignore.case = TRUE)){
+    return('Data Analyst')
+  }else if(grepl('Applied Data Analyst',job_title,ignore.case = TRUE)){
+    return('Data Analyst')
+  }else if(grepl('Business Data Analyst',job_title,ignore.case = TRUE)){
+    return('Data Analyst')
+  }else if(grepl('BI Data Analyst',job_title,ignore.case = TRUE)){
+    return('Data Analyst')  
+  }else if(grepl('Lead Data Analyst',job_title,ignore.case = TRUE)){
+    return('Data Analyst')
+  }else if(grepl('Applied Data Scientist',job_title,ignore.case = TRUE)){
+    return('Data Scientist')
+  }else if(grepl('Principal Data Scientist',job_title,ignore.case = TRUE)){
+    return('Data Scientist')
+  }else if(grepl('Lead Data Scientist',job_title,ignore.case = TRUE)){
+    return('Data Scientist')
+  }else if(grepl('Data Engineer',job_title,ignore.case = TRUE)){
+    return('Data Engineer')
+  }else if(grepl('ML Engineer',job_title,ignore.case = TRUE)){
+    return('ML Engineer')
+  }else if(grepl('Data Architect',job_title,ignore.case = TRUE)){
+    return('Data Architect')
+  }else if(grepl('Machine Learning Engineer',job_title,ignore.case = TRUE)){
+    return('ML Engineer')
+  }else if(grepl('Machine Learning Software Engineer',job_title,ignore.case = TRUE)){
+    return('ML Engineer')
+  }else if(grepl('Applied Machine Learning Engineer',job_title,ignore.case = TRUE)){
+    return('ML Engineer')
+  }else if(grepl('Analytics Engineer',job_title,ignore.case = TRUE)){
+    return('Analytics Engineer')  
+  }else if(grepl('Research scientists',job_title,ignore.case = TRUE)){
+    return('Reasearch scientists')  
+  }else{
+    return('Other related jobs')
+  }
+}
+
+df$Main_Title <- sapply(df$job_title,categorize_title)
+```
+```{r}
+#Convert to Factors
+df$work_year <- as.factor(df$work_year)
+df$job_title <- as.factor(df$job_title)
+df$Main_Title <- as.factor(df$Main_Title)
+df <- mutate(df, Main_Title = factor(Main_Title, levels = names(sort(table(Main_Title))))) #reorder levels of factor ascending order of frequency count
+df$employment_type <- as.factor(df$employment_type)
+df$experience_level <- as.factor(df$experience_level)
+df$remote_ratio <- as.factor(df$remote_ratio)
+df$company_size <- as.factor(df$company_size)
+df$employee_residence<-as.factor(df$employee_residence)
+df$company_location<-as.factor(df$company_location)
+summary(df)
+
+```
+
+* We checked missing values and converted to factors and did pre-processing part of our data set.Now let's look at  the exploratory data analysis part.
+
+## EXPLORATARY ANALYSIS
+
+### UNIVARIATE ANALYSIS
+
+```{r}
+ggplot(df, aes(x=work_year))+
+  geom_bar(fill="blue", width=0.7)+
+  labs(x="Work Year" ,y="Frequency")+ggtitle("Work year Distribution")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+* 2023 year has the highest employee responses and according to this graph  there is a positive trend and after 2021 employees are highly increased 
+
+
+```{r}
+df1 <- filter(df, Main_Title != "Other related jobs")#filter out other jobs and create new data frame with most common six job titles
+ggplot(df1,aes(x=Main_Title))+
+  geom_bar(fill="red", width=0.7)+
+  labs(x="Jobs", y="Frequency")+ggtitle("Most common Jobs Distribution")+
+  theme(plot.title = element_text(hjust = 0.5))
+ 
+```
+* These 6 are the most commonly used job vacancies. Data Engineering job field has highest responses since 2020 to 2023.according to this graph we can rank first 5 most common jobs 
+
+```{r}
+ggplot(df,aes(experience_level))+
+  geom_bar(fill="green",width = 0.7)+
+  labs(x="Experience Level", y="Frequency")+ggtitle("Experience level Distribution")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(df,aes(employment_type))+
+  geom_bar(fill="cyan",width = 0.7)+
+  labs(x="Employment type", y="Frequency")+ggtitle("Employment type Distribution")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+* plot displays the frequency of responses by experience level. Clearly, Senior level of experience has the highest count and other plot displays the frequency of employee esponses by employment type. Clearly,employment_type of Full Time has the highest count.
+
+```{r}
+ggplot(df,aes(x="",fill=remote_ratio))+geom_bar(width = 0.7)+coord_polar(theta = "y")+
+  ggtitle("Remote Ratio distribution")+
+  theme(plot.title = element_text(hjust=0.5))+ scale_fill_manual(values = c("50"= "green","100"="orange","0"="blue"))
+
+```
+* This plot shows remote ratio of the employees responses 
+
+*    0 - Onsite
+*   50 - Hybrid
+*  100 - Online
+
+Highest value is in onsite data science related jobs since 2020.
+
+```{r}
+ggplot(df,aes(x=salary_in_usd))+
+  geom_histogram(fill="blue",binwidth=10000)+geom_vline(xintercept = 100000, color = "red", linetype = "dashed", linewidth = 0.5)+geom_vline(xintercept = 200000, color = "red", linetype = "dashed", linewidth = 0.5)+
+  labs(x="salary in USD", Y=NULL)+ggtitle("SALARY(USD) Distribution")+
+  theme(plot.title = element_text(hjust= 0.5))
+```
+* The above histogram provides a visual representation of the salary distribution in USD, highlighting that there are more salary between 100000 and 200000 USD.
+
+
+### BIVARIATE ANALYSIS
+
+#### Identify the impact of experience level to the salary
+
+```{r}
+ggplot(df, aes(x = experience_level, y = salary_in_usd, fill = experience_level)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("EX" = "red", "EN" = "yellow", "MI" = "green", "SE" = "orange")) +
+  ggtitle("Relationship between Experience level and Salary (USD) distribution") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+```
+* The box plot visually contrasts salary distributions across experience levels.
+
+* EN - Entry level
+* EX - Executive level
+* MI - Mid level
+* SE - Senior level
+
+The experience level with Executive level has higher salary compared to other experience levels. There are many outliers in Senior and Mid level which indicates salaries that significantly deviate from the rest of the distribution.
+
+#### Identify association between remote ratio and salary(USD)
+
+```{r}
+ggplot(df, aes(x = remote_ratio, y = salary_in_usd, fill = remote_ratio)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("0" = "yellow", "50" = "green", "100" = "orange")) +
+  ggtitle("Relationship between remote ratio and Salary (USD) distribution") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+* The box plot visually contrasts salary distributions across remote ratio.
+
+* 0 - onsite
+* 50 - hybrid
+* 100 - online
+
+The onsite and online has higher salary compared to hybrid jobs. There are many outliers in onsite(0) and online(100).
+
+
+#### Identify the association between avg salary(USD) and most common jobs
+
+```{r}
+
+average_salary <- aggregate(salary_in_usd ~ Main_Title, data = df1, FUN = mean)
+
+ggplot(average_salary, aes(x = Main_Title, y = salary_in_usd)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  labs(x = "Most common job Title", y = "Average Salary (USD)") +
+  ggtitle("Average Salary(USD) by Most common six Job Title")+ theme(plot.title = element_text(hjust= 0.5))
+```
+
+* This bar plot shows average of salary(USD) of most common job fields,revealing Data Architect and ML Engineer has the highest average salaries while data analyst has lowest average salaries.
+
+#### Identify association between salary and employee type
+
+* H0 : No difference between mean salaries across employment type
+* H1 : Difference between mean salaries across employment type
+
+
+```{r}
+ANOVA1=aov(salary_in_usd~employment_type,data=df)
+anova(ANOVA1)
+TukeyHSD(ANOVA1)
+```
+* The ANOVA table suggests that there is a STRONG significant difference in mean salaries across different employment types, as indicated by the very small p-value (< 0.001)
+
+* FL-CT, FT-CT, and PT-FL pairs have adjusted p-values greater than 0.05, indicating no significant differences in mean salaries between these groups at 5% significance level.
+
+* Therefore we can say that employment type has a significant effect on salary, with certain pairs of employment types showing significant differences in mean salaries.
+
+#### Identify company location and employee residence have a association
+
+
+* HO : No association between company location and employee residence
+* H1 : Has a association between company location and employee residence
+
+```{r}
+contigency_table <-table(df$company_location,df$employee_residence)
+fisher_exact <- fisher.test(contigency_table, simulate.p.value = TRUE)
+print(fisher_exact)
+```
+* Since the p-value (0.0004998) is less than the significance level (α = 0.05), we would reject the null hypothesis and conclude that there is a significant association between residence and location.
+
+Lets look at conclusions.
+
+## FINAL CONCLUSIONS
+
+1. The distribution of salaries revealed that there are more salary paid range between 100000 and 200000 USD.
+
+2. Distribution of salary(USD) of most common job fields,revealing Data Architect and ML Engineer has the highest average salaries while data analyst has lowest average salaries.
+
+3. Most employees are in senior level and executive level has highest salary paid level but there are many high value outliers in senior level and mid level Therefore we cant say the relationship strong between them.
+
+4. The onsite and online has higher salary compared to hybrid jobs. There are many outliers in onsite(0) and online(100).
+
+5. Employment type has a significant effect on salary, with certain pairs of employment types(PT-CT, FT-FL, and PT-FT) showing significant differences in mean salaries.
+
+6. there is a significant association between employee residence and company location.
+
+
+
+
+
